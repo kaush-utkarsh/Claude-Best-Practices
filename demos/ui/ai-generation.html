@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo: AI-Assisted Generation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    .demo-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 24px;
+      width: 100%;
+      max-width: 760px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      cursor: pointer;
+      color: #64748b;
+      transition: all 0.2s;
+      border: none;
+      background: transparent;
+    }
+
+    .tab.active {
+      background: #6366f1;
+      color: white;
+    }
+
+    .tab:hover:not(.active) {
+      color: #e2e8f0;
+      background: #2d3148;
+    }
+
+    .panel {
+      display: none;
+      width: 100%;
+      max-width: 760px;
+    }
+
+    .panel.active { display: block; }
+
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid #2d3148;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .card-body { padding: 20px; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+
+    label:first-child { margin-top: 0; }
+
+    input, textarea, select {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+      padding: 10px 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus, select:focus { border-color: #6366f1; }
+
+    textarea { resize: vertical; min-height: 70px; }
+
+    select option { background: #1e2130; }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+
+    button:hover    { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: #6366f1; color: white; }
+    .btn-ghost {
+      background: transparent;
+      color: #64748b;
+      border: 1px solid #2d3148;
+    }
+
+    .output-box {
+      background: #0a0d14;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 13px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      line-height: 1.6;
+      color: #a5b4fc;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 120px;
+      margin-top: 16px;
+      position: relative;
+    }
+
+    .output-preview {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 12px;
+      min-height: 80px;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 4px 12px;
+      font-size: 11px;
+      background: #2d3148;
+      color: #94a3b8;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover { background: #6366f1; color: white; }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #2d3148;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .key-rule {
+      background: #1a1a2e;
+      border: 1px solid #6366f1;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 4px;
+    }
+
+    .key-rule p {
+      font-size: 13px;
+      color: #a5b4fc;
+      line-height: 1.7;
+    }
+
+    .key-rule strong { color: #e2e8f0; }
+
+    /* Preview styles for generated components */
+    .preview-btn {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .preview-alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin: 8px 0;
+    }
+
+    .preview-card-inner {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <p class="demo-label">Demo — AI Generation</p>
+  <h1>AI-Assisted UI Generation</h1>
+  <p class="subtitle">Generate components, copy, and layouts on demand</p>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('component')">Component Generator</button>
+    <button class="tab"        onclick="switchTab('copy')">Copy Generator</button>
+    <button class="tab"        onclick="switchTab('layout')">Layout Planner</button>
+  </div>
+
+
+  <!-- TAB 1: COMPONENT GENERATOR -->
+  <div class="panel active" id="panel-component">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Describe your component</span>
+      </div>
+      <div class="card-body">
+        <label>Component type</label>
+        <select id="comp-type">
+          <option value="React">React (JSX)</option>
+          <option value="HTML/CSS">HTML + CSS</option>
+          <option value="Vue">Vue</option>
+        </select>
+
+        <label>What should it do?</label>
+        <textarea id="comp-desc" placeholder="e.g. An error banner that shows when an order fails. Should have a warning icon, a title, a message, and a dismiss button.">An order status card showing: order ID, status badge (processing/failed/complete), item name, and a retry button that only shows when status is failed.</textarea>
+
+        <label>Style / tone</label>
+        <select id="comp-style">
+          <option value="dark, minimal">Dark minimal</option>
+          <option value="light, clean">Light clean</option>
+          <option value="enterprise, professional">Enterprise</option>
+          <option value="modern, colourful">Modern colourful</option>
+        </select>
+
+        <div class="controls">
+          <button class="btn-primary" id="btn-comp" onclick="generateComponent()">Generate component</button>
+          <button class="btn-ghost" onclick="clearComp()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="comp-output-card" style="display:none">
+      <div class="card-header">
+        <span class="card-title">Generated code</span>
+        <span id="comp-time" style="font-size:11px;color:#64748b"></span>
+      </div>
+      <div class="card-body">
+        <div class="output-box" id="comp-code">
+          <button class="copy-btn" onclick="copyCode('comp-code')">Copy</button>
+          <span id="comp-code-text"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="key-rule">
+      <p>
+        <strong>Direct productivity gain.</strong><br>
+        Describe it in plain English. Get working code back in seconds.<br>
+        The developer's job shifts from typing boilerplate to reviewing and refining.<br>
+        Same output. A fraction of the time.
+      </p>
+    </div>
+  </div>
+
+
+  <!-- TAB 2: COPY GENERATOR -->
+  <div class="panel" id="panel-copy">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Generate UI copy</span>
+      </div>
+      <div class="card-body">
+        <label>What UI moment needs copy?</label>
+        <select id="copy-moment">
+          <option value="error message">Error message</option>
+          <option value="empty state">Empty state</option>
+          <option value="success confirmation">Success confirmation</option>
+          <option value="loading state">Loading state</option>
+          <option value="onboarding tooltip">Onboarding tooltip</option>
+          <option value="destructive action warning">Destructive action warning</option>
+        </select>
+
+        <label>Context</label>
+        <textarea id="copy-context" placeholder="What happened? Who is the user? What do they need to do next?">A user's checkout failed because of a backend error. Their payment may or may not have been charged. They need to know what happened and what to do next without panicking.</textarea>
+
+        <label>Tone</label>
+        <select id="copy-tone">
+          <option value="calm and reassuring">Calm and reassuring</option>
+          <option value="direct and technical">Direct and technical</option>
+          <option value="friendly and conversational">Friendly</option>
+          <option value="formal and professional">Formal</option>
+        </select>
+
+        <div class="controls">
+          <button class="btn-primary" id="btn-copy" onclick="generateCopy()">Generate copy</button>
+          <button class="btn-ghost" onclick="clearCopy()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="copy-output-card" style="display:none">
+      <div class="card-header">
+        <span class="card-title">Generated copy — 3 variants</span>
+        <span id="copy-time" style="font-size:11px;color:#64748b"></span>
+      </div>
+      <div class="card-body">
+        <div class="output-box" id="copy-output">
+          <button class="copy-btn" onclick="copyCode('copy-output')">Copy</button>
+          <span id="copy-output-text"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="key-rule">
+      <p>
+        <strong>Copy is a product decision.</strong><br>
+        The words that appear at your worst moments — errors, failures, empty states — shape how users feel about your product.<br>
+        Generate 3 variants in seconds. Pick the one that fits. Move on.
+      </p>
+    </div>
+  </div>
+
+
+  <!-- TAB 3: LAYOUT PLANNER -->
+  <div class="panel" id="panel-layout">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Describe your screen</span>
+      </div>
+      <div class="card-body">
+        <label>What screen are you building?</label>
+        <textarea id="layout-desc" placeholder="Describe the screen, what data it shows, and what actions the user can take.">An order detail page for the e-commerce platform. Shows: order ID, status, list of items, total price, delivery address, and a timeline of order events. Actions: cancel order (only if pending), download invoice, contact support.</textarea>
+
+        <label>Device target</label>
+        <select id="layout-device">
+          <option value="desktop and mobile responsive">Desktop + Mobile responsive</option>
+          <option value="desktop only">Desktop only</option>
+          <option value="mobile first">Mobile first</option>
+        </select>
+
+        <div class="controls">
+          <button class="btn-primary" id="btn-layout" onclick="generateLayout()">Plan layout</button>
+          <button class="btn-ghost" onclick="clearLayout()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="layout-output-card" style="display:none">
+      <div class="card-header">
+        <span class="card-title">Layout plan</span>
+        <span id="layout-time" style="font-size:11px;color:#64748b"></span>
+      </div>
+      <div class="card-body">
+        <div class="output-box" id="layout-output">
+          <button class="copy-btn" onclick="copyCode('layout-output')">Copy</button>
+          <span id="layout-output-text"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="key-rule">
+      <p>
+        <strong>From description to structure in seconds.</strong><br>
+        Paste this plan into your next Claude Code session and say: "Build this."<br>
+        The layout decisions are already made. You're just executing.
+      </p>
+    </div>
+  </div>
+
+
+  <script>
+    // ── TAB SWITCHING ──────────────────────────────────────────
+    function switchTab(name) {
+      document.querySelectorAll(".tab").forEach((t, i) => {
+        t.classList.toggle("active", ["component", "copy", "layout"][i] === name);
+      });
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      document.getElementById(`panel-${name}`).classList.add("active");
+    }
+
+
+    // ── COMPONENT GENERATOR ────────────────────────────────────
+    async function generateComponent() {
+      const type  = document.getElementById("comp-type").value;
+      const desc  = document.getElementById("comp-desc").value.trim();
+      const style = document.getElementById("comp-style").value;
+      if (!desc) return;
+
+      const btn = document.getElementById("btn-comp");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Generating...';
+
+      document.getElementById("comp-output-card").style.display = "block";
+      document.getElementById("comp-code-text").textContent = "Generating...";
+
+      const start = Date.now();
+
+      try {
+        const res  = await fetch("/generate", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system: `You are an expert ${type} developer. 
+Generate clean, production-ready ${type} component code.
+Style: ${style}.
+Return ONLY the code — no explanation, no markdown fences, no preamble.
+The code must be complete and runnable.`,
+            prompt: `Build this component: ${desc}`,
+          }),
+        });
+
+        const data  = await res.json();
+        const total = ((Date.now() - start) / 1000).toFixed(2);
+
+        document.getElementById("comp-code-text").textContent = data.text || data.error;
+        document.getElementById("comp-time").textContent      = `Generated in ${total}s`;
+
+      } catch (err) {
+        document.getElementById("comp-code-text").textContent = `Error: ${err.message}`;
+      }
+
+      btn.disabled = false;
+      btn.textContent = "Generate component";
+    }
+
+    function clearComp() {
+      document.getElementById("comp-output-card").style.display = "none";
+      document.getElementById("comp-code-text").textContent = "";
+    }
+
+
+    // ── COPY GENERATOR ─────────────────────────────────────────
+    async function generateCopy() {
+      const moment  = document.getElementById("copy-moment").value;
+      const context = document.getElementById("copy-context").value.trim();
+      const tone    = document.getElementById("copy-tone").value;
+      if (!context) return;
+
+      const btn = document.getElementById("btn-copy");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Generating...';
+
+      document.getElementById("copy-output-card").style.display = "block";
+      document.getElementById("copy-output-text").textContent    = "Generating 3 variants...";
+
+      const start = Date.now();
+
+      try {
+        const res  = await fetch("/generate", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system: `You are a UX writer specialising in product copy.
+Generate exactly 3 variants of UI copy for the given moment.
+Tone: ${tone}.
+Format each variant as:
+VARIANT 1:
+Title: [short heading — max 6 words]
+Body: [1-2 sentences]
+CTA: [button or action label]
+
+VARIANT 2: ...
+VARIANT 3: ...
+
+No extra commentary. Just the 3 variants.`,
+            prompt: `Write copy for this UI moment: ${moment}
+Context: ${context}`,
+          }),
+        });
+
+        const data  = await res.json();
+        const total = ((Date.now() - start) / 1000).toFixed(2);
+
+        document.getElementById("copy-output-text").textContent = data.text || data.error;
+        document.getElementById("copy-time").textContent        = `Generated in ${total}s`;
+
+      } catch (err) {
+        document.getElementById("copy-output-text").textContent = `Error: ${err.message}`;
+      }
+
+      btn.disabled = false;
+      btn.textContent = "Generate copy";
+    }
+
+    function clearCopy() {
+      document.getElementById("copy-output-card").style.display = "none";
+      document.getElementById("copy-output-text").textContent = "";
+    }
+
+
+    // ── LAYOUT PLANNER ─────────────────────────────────────────
+    async function generateLayout() {
+      const desc   = document.getElementById("layout-desc").value.trim();
+      const device = document.getElementById("layout-device").value;
+      if (!desc) return;
+
+      const btn = document.getElementById("btn-layout");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Planning...';
+
+      document.getElementById("layout-output-card").style.display = "block";
+      document.getElementById("layout-output-text").textContent    = "Planning layout...";
+
+      const start = Date.now();
+
+      try {
+        const res  = await fetch("/generate", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system: `You are a senior UI/UX designer and frontend architect.
+Given a screen description, produce a clear layout plan.
+Target: ${device}.
+Format your response as:
+
+SCREEN: [name]
+SECTIONS: [list the main sections top to bottom]
+
+For each section:
+SECTION: [name]
+PURPOSE: [what it does]
+COMPONENTS: [list key components]
+LAYOUT: [describe the layout — columns, grid, stack]
+NOTES: [any important UX decisions]
+
+Then end with:
+COMPONENT PRIORITY: [list which components to build first]
+DATA REQUIREMENTS: [what API data is needed]`,
+            prompt: `Plan the layout for: ${desc}`,
+          }),
+        });
+
+        const data  = await res.json();
+        const total = ((Date.now() - start) / 1000).toFixed(2);
+
+        document.getElementById("layout-output-text").textContent = data.text || data.error;
+        document.getElementById("layout-time").textContent        = `Generated in ${total}s`;
+
+      } catch (err) {
+        document.getElementById("layout-output-text").textContent = `Error: ${err.message}`;
+      }
+
+      btn.disabled = false;
+      btn.textContent = "Plan layout";
+    }
+
+    function clearLayout() {
+      document.getElementById("layout-output-card").style.display = "none";
+      document.getElementById("layout-output-text").textContent = "";
+    }
+
+
+    // ── COPY CODE ─────────────────────────────────────────────
+    function copyCode(boxId) {
+      const box  = document.getElementById(boxId);
+      const text = box.querySelector("span")?.textContent || box.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = box.querySelector(".copy-btn");
+        if (btn) { btn.textContent = "Copied!"; setTimeout(() => btn.textContent = "Copy", 2000); }
+      });
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo: Streaming Response</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    .demo-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 760px;
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid #2d3148;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+
+    .badge-stream  { background: #1a3a2a; color: #4ade80; }
+    .badge-wait    { background: #1a1a3a; color: #818cf8; }
+    .badge-blocked { background: #3a1a1a; color: #f87171; }
+
+    .card-body { padding: 20px; }
+
+    textarea {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+      padding: 12px 16px;
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus { border-color: #6366f1; }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+
+    button:hover   { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary { background: #6366f1; color: white; }
+    .btn-danger  { background: #dc2626; color: white; }
+    .btn-ghost   {
+      background: transparent;
+      color: #64748b;
+      border: 1px solid #2d3148;
+    }
+
+    .response-box {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 120px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 16px;
+      position: relative;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 16px;
+      background: #6366f1;
+      margin-left: 2px;
+      vertical-align: middle;
+      animation: blink 0.8s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    .timer {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 8px;
+      font-family: "SF Mono", monospace;
+    }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+      max-width: 760px;
+    }
+
+    .comp-card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .comp-card h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .comp-card.stream h3 { color: #4ade80; }
+    .comp-card.wait   h3 { color: #f87171; }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #2d3148;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .key-rule {
+      width: 100%;
+      max-width: 760px;
+      background: #1a1a2e;
+      border: 1px solid #6366f1;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 8px;
+    }
+
+    .key-rule p {
+      font-size: 13px;
+      color: #a5b4fc;
+      line-height: 1.6;
+    }
+
+    .key-rule strong { color: #e2e8f0; }
+
+    .token-counter {
+      font-size: 11px;
+      font-family: "SF Mono", monospace;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    .highlight { color: #4ade80; }
+  </style>
+</head>
+<body>
+
+  <p class="demo-label">Demo — UI Streaming</p>
+  <h1>Streaming Response</h1>
+  <p class="subtitle">Token-by-token rendering vs waiting for the full response</p>
+
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Prompt</span>
+    </div>
+    <div class="card-body">
+      <textarea id="prompt" placeholder="Ask something that requires a detailed answer...">Explain how a NullPointerException happens in Java and how to prevent it. Use a real code example.</textarea>
+      <div class="controls">
+        <button class="btn-primary" id="btn-stream"  onclick="runStream()">▶ Stream it</button>
+        <button class="btn-danger"  id="btn-wait"    onclick="runWait()">⏳ Wait for full response</button>
+        <button class="btn-ghost"                    onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- COMPARISON CARDS -->
+  <div class="comparison">
+
+    <!-- STREAMING -->
+    <div class="comp-card stream">
+      <h3>✅ Streaming</h3>
+      <div id="stream-status" class="badge badge-stream" style="display:inline-block;margin-bottom:12px">Ready</div>
+      <div id="stream-output" class="response-box" style="min-height:200px">
+        <span style="color:#2d3148">Response appears here token by token...</span>
+      </div>
+      <div class="timer"   id="stream-timer"></div>
+      <div class="token-counter" id="stream-tokens"></div>
+    </div>
+
+    <!-- WAITING -->
+    <div class="comp-card wait">
+      <h3>❌ No streaming</h3>
+      <div id="wait-status" class="badge badge-wait" style="display:inline-block;margin-bottom:12px">Ready</div>
+      <div id="wait-output" class="response-box" style="min-height:200px">
+        <span style="color:#2d3148">Response appears only when fully complete...</span>
+      </div>
+      <div class="timer" id="wait-timer"></div>
+    </div>
+
+  </div>
+
+
+  <!-- KEY RULE -->
+  <div class="key-rule">
+    <p>
+      <strong>One flag. Massive UX difference.</strong><br>
+      Streaming: <code style="color:#a5b4fc">stream: true</code> in your API call + ~40 lines to read the SSE response.<br>
+      The user sees the first token in &lt;500ms instead of waiting 6-8 seconds for the full response.<br>
+      This is the single biggest UX improvement a frontend dev can ship in one day.
+    </p>
+  </div>
+
+
+  <script>
+    let streamStart = null;
+    let waitStart   = null;
+    let tokenCount  = 0;
+    let timerInterval = null;
+
+    async function runStream() {
+      const prompt = document.getElementById("prompt").value.trim();
+      if (!prompt) return;
+
+      // Reset
+      tokenCount = 0;
+      const output = document.getElementById("stream-output");
+      const status = document.getElementById("stream-status");
+      const timer  = document.getElementById("stream-timer");
+      const tokens = document.getElementById("stream-tokens");
+
+      output.innerHTML  = "";
+      timer.textContent = "";
+      tokens.textContent = "";
+      status.textContent = "Streaming...";
+      status.className   = "badge badge-stream";
+
+      document.getElementById("btn-stream").disabled = true;
+      streamStart = Date.now();
+
+      // Start timer display
+      timerInterval = setInterval(() => {
+        timer.textContent = `⏱ ${((Date.now() - streamStart) / 1000).toFixed(1)}s`;
+      }, 100);
+
+      try {
+        const response = await fetch("/stream", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ prompt }),
+        });
+
+        const reader  = response.body.getReader();
+        const decoder = new TextDecoder();
+        let   buffer  = "";
+        let   firstToken = true;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.token) {
+                // Remove cursor before adding new token
+                const cursor = output.querySelector(".cursor");
+                if (cursor) cursor.remove();
+
+                // First token time
+                if (firstToken) {
+                  const ttft = ((Date.now() - streamStart) / 1000).toFixed(2);
+                  status.textContent = `First token: ${ttft}s`;
+                  firstToken = false;
+                }
+
+                // Append token
+                output.appendChild(document.createTextNode(data.token));
+
+                // Add blinking cursor
+                const cur = document.createElement("span");
+                cur.className = "cursor";
+                output.appendChild(cur);
+
+                tokenCount++;
+                tokens.textContent = `${tokenCount} tokens received`;
+              }
+
+              if (data.done) {
+                const cursor = output.querySelector(".cursor");
+                if (cursor) cursor.remove();
+                clearInterval(timerInterval);
+                const total = ((Date.now() - streamStart) / 1000).toFixed(2);
+                status.textContent = `Done — ${total}s total`;
+                timer.textContent  = `⏱ ${total}s | ${tokenCount} tokens`;
+              }
+
+              if (data.error) {
+                output.textContent = `Error: ${data.error}`;
+                status.textContent = "Error";
+              }
+            } catch {}
+          }
+        }
+      } catch (err) {
+        output.textContent = `Error: ${err.message}`;
+      }
+
+      clearInterval(timerInterval);
+      document.getElementById("btn-stream").disabled = false;
+    }
+
+
+    async function runWait() {
+      const prompt = document.getElementById("prompt").value.trim();
+      if (!prompt) return;
+
+      const output = document.getElementById("wait-output");
+      const status = document.getElementById("wait-status");
+      const timer  = document.getElementById("wait-timer");
+
+      output.innerHTML   = '<div class="spinner"></div><p style="text-align:center;color:#64748b;font-size:13px">Waiting for complete response...</p>';
+      status.textContent = "Waiting...";
+      status.className   = "badge badge-blocked";
+      timer.textContent  = "";
+
+      document.getElementById("btn-wait").disabled = true;
+      waitStart = Date.now();
+
+      // Show elapsed time while waiting
+      const waitInterval = setInterval(() => {
+        timer.textContent = `⏱ ${((Date.now() - waitStart) / 1000).toFixed(1)}s — still waiting...`;
+      }, 100);
+
+      try {
+        const response = await fetch("/generate", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ prompt }),
+        });
+
+        const data  = await response.json();
+        const total = ((Date.now() - waitStart) / 1000).toFixed(2);
+
+        clearInterval(waitInterval);
+        output.textContent  = data.text || data.error;
+        status.textContent  = `Done — ${total}s wait`;
+        status.className    = "badge badge-wait";
+        timer.textContent   = `⏱ ${total}s total wait`;
+
+      } catch (err) {
+        clearInterval(waitInterval);
+        output.textContent = `Error: ${err.message}`;
+      }
+
+      document.getElementById("btn-wait").disabled = false;
+    }
+
+
+    function clearAll() {
+      ["stream-output", "wait-output"].forEach(id => {
+        document.getElementById(id).innerHTML =
+          `<span style="color:#2d3148">Response appears here...</span>`;
+      });
+      ["stream-timer", "wait-timer", "stream-tokens"].forEach(id => {
+        document.getElementById(id).textContent = "";
+      });
+      document.getElementById("stream-status").textContent = "Ready";
+      document.getElementById("wait-status").textContent   = "Ready";
+      clearInterval(timerInterval);
+    }
+  </script>
+
+</body>
+</html>
