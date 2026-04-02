@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sahara Survival — Adventure Game</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    .demo-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 760px;
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid #2d3148;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+
+    .badge-playing  { background: #1a3a2a; color: #4ade80; }
+    .badge-won      { background: #1a3a2a; color: #4ade80; }
+    .badge-dead     { background: #3a1a1a; color: #f87171; }
+    .badge-ready    { background: #1a1a3a; color: #818cf8; }
+
+    .card-body { padding: 20px; }
+
+    /* --- Question area --- */
+    .question-text {
+      font-size: 18px;
+      font-weight: 500;
+      color: #f1f5f9;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option-btn {
+      width: 100%;
+      text-align: left;
+      padding: 14px 20px;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 15px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      font-family: inherit;
+    }
+
+    .option-btn:hover {
+      border-color: #6366f1;
+      background: #1a1a2e;
+    }
+
+    .option-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* --- Response area --- */
+    .response-box {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #e2e8f0;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .response-box.visible { display: block; }
+
+    .response-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+
+    .response-text {
+      color: #a5b4fc;
+    }
+
+    /* --- History log --- */
+    .history-card {
+      width: 100%;
+      max-width: 760px;
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .history-list {
+      padding: 16px 20px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .history-entry {
+      padding: 8px 0;
+      border-bottom: 1px solid #2d3148;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .history-entry:last-child { border-bottom: none; }
+
+    .history-q { color: #64748b; }
+    .history-choice { color: #818cf8; }
+    .history-response { color: #4ade80; }
+    .history-death { color: #f87171; }
+
+    /* --- Buttons --- */
+    button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    .btn-primary { background: #6366f1; color: white; }
+    .btn-ghost {
+      background: transparent;
+      color: #64748b;
+      border: 1px solid #2d3148;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    /* --- Game over screen --- */
+    .game-over {
+      text-align: center;
+      padding: 30px 20px;
+    }
+
+    .game-over-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .game-over-title.win { color: #4ade80; }
+    .game-over-title.lose { color: #f87171; }
+
+    .game-over-message {
+      font-size: 15px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+
+    .step-counter {
+      font-size: 12px;
+      font-family: "SF Mono", monospace;
+      color: #64748b;
+      margin-top: 8px;
+    }
+
+    /* --- Key rule box (matches demos/ui style) --- */
+    .key-rule {
+      width: 100%;
+      max-width: 760px;
+      background: #1a1a2e;
+      border: 1px solid #6366f1;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 8px;
+    }
+
+    .key-rule p {
+      font-size: 13px;
+      color: #a5b4fc;
+      line-height: 1.6;
+    }
+
+    .key-rule strong { color: #e2e8f0; }
+  </style>
+</head>
+<body>
+
+  <p class="demo-label">Target App — Adventure Game</p>
+  <h1>Sahara Survival</h1>
+  <p class="subtitle">A choose-your-own-adventure game — ported from Python to Node.js + HTML</p>
+
+
+  <!-- GAME CARD -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Game</span>
+      <span class="badge badge-ready" id="status-badge">Ready</span>
+    </div>
+    <div class="card-body" id="game-area">
+      <!-- Start screen -->
+      <div id="start-screen">
+        <p style="color:#94a3b8; font-size:15px; margin-bottom:16px;">
+          You are about to be dropped in the Sahara Desert.<br>
+          Make the right choices to survive. One wrong move and it's game over.
+        </p>
+        <button class="btn-primary" onclick="startGame()">Start Game</button>
+      </div>
+
+      <!-- Question screen (hidden initially) -->
+      <div id="question-screen" style="display:none;">
+        <div class="step-counter" id="step-counter"></div>
+        <p class="question-text" id="question-text"></p>
+        <div class="options" id="options-container"></div>
+
+        <div class="response-box" id="response-box">
+          <p class="response-label">Result</p>
+          <p class="response-text" id="response-text"></p>
+        </div>
+
+        <div class="controls" id="continue-controls" style="display:none;">
+          <button class="btn-primary" id="btn-continue" onclick="showNextQuestion()">Continue</button>
+        </div>
+      </div>
+
+      <!-- Game over screen (hidden initially) -->
+      <div id="gameover-screen" style="display:none;" class="game-over">
+        <p class="game-over-title" id="gameover-title"></p>
+        <p class="game-over-message" id="gameover-message"></p>
+        <p class="step-counter" id="gameover-steps"></p>
+        <button class="btn-primary" onclick="startGame()" style="margin-top:12px;">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- HISTORY CARD -->
+  <div class="history-card">
+    <div class="card-header">
+      <span class="card-title">Decision History</span>
+      <button class="btn-ghost" onclick="clearHistory()" style="padding:4px 12px; font-size:11px;">Clear</button>
+    </div>
+    <div class="history-list" id="history-list">
+      <p style="color:#2d3148; font-size:13px;">Choices will appear here as you play...</p>
+    </div>
+  </div>
+
+
+  <!-- KEY RULE -->
+  <div class="key-rule">
+    <p>
+      <strong>Same logic, different runtime.</strong><br>
+      The Python original used a <code style="color:#a5b4fc">while</code> loop with <code style="color:#a5b4fc">input()</code> in the terminal.<br>
+      This version splits the same game into a <strong>server</strong> (Express, handles game rules)
+      and a <strong>client</strong> (HTML, handles display) — the pattern used in real web apps.
+    </p>
+  </div>
+
+
+  <script>
+    // ---------------------------------------------------------
+    // STATE
+    // Mirrors file2.py's "jump" variable — tracks current question
+    // ---------------------------------------------------------
+    let currentQuestionKey = null;
+    let pendingNextQuestion = null;
+    let stepCount = 0;
+    let historyStarted = false;
+
+
+    // ---------------------------------------------------------
+    // START GAME
+    // Calls GET /api/start — same as file2.py: jump = 'Q1'
+    // ---------------------------------------------------------
+    async function startGame() {
+      stepCount = 0;
+      historyStarted = false;
+      clearHistory();
+
+      const res  = await fetch("/api/start");
+      const data = await res.json();
+
+      currentQuestionKey = data.questionKey;
+      setBadge("Playing", "badge-playing");
+      showScreen("question-screen");
+      renderQuestion(data);
+    }
+
+
+    // ---------------------------------------------------------
+    // CHOOSE AN OPTION
+    // Calls POST /api/answer — same as file2.py's input() + validation
+    // ---------------------------------------------------------
+    async function chooseOption(optionKey) {
+      // Disable all option buttons while waiting (prevent double-click)
+      disableOptions(true);
+
+      const res = await fetch("/api/answer", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          questionKey: currentQuestionKey,
+          option: optionKey,
+        }),
+      });
+
+      const data = await res.json();
+
+      // Show the response text — same as file2.py: print(response)
+      showResponse(data.response);
+      addHistory(currentQuestionKey, optionKey, data.response, data.gameOver && !data.survived);
+
+      if (data.gameOver) {
+        // Game over — same as file2.py: while(jump != '-1') exits
+        pendingNextQuestion = null;
+        showGameOver(data.survived, data.response);
+      } else {
+        // Continue — same as file2.py: jump = next question key
+        pendingNextQuestion = data.nextQuestion;
+        document.getElementById("continue-controls").style.display = "flex";
+      }
+    }
+
+
+    // ---------------------------------------------------------
+    // SHOW NEXT QUESTION
+    // Called when player clicks "Continue" after seeing the response
+    // ---------------------------------------------------------
+    function showNextQuestion() {
+      if (!pendingNextQuestion) return;
+
+      currentQuestionKey = pendingNextQuestion.questionKey;
+      renderQuestion(pendingNextQuestion);
+      pendingNextQuestion = null;
+
+      // Hide response and continue button
+      document.getElementById("response-box").classList.remove("visible");
+      document.getElementById("continue-controls").style.display = "none";
+    }
+
+
+    // ---------------------------------------------------------
+    // RENDER HELPERS
+    // ---------------------------------------------------------
+    function renderQuestion(data) {
+      stepCount++;
+      document.getElementById("step-counter").textContent = `Step ${stepCount}`;
+      document.getElementById("question-text").textContent = data.text;
+
+      const container = document.getElementById("options-container");
+      container.innerHTML = "";
+
+      // Build option buttons — same as file2.py: for op in ques[jump]['options']
+      for (const [key, value] of Object.entries(data.options)) {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.textContent = value.text;
+        btn.onclick = () => chooseOption(key);
+        container.appendChild(btn);
+      }
+
+      // Reset response area
+      document.getElementById("response-box").classList.remove("visible");
+      document.getElementById("continue-controls").style.display = "none";
+    }
+
+    function showResponse(text) {
+      const box = document.getElementById("response-box");
+      document.getElementById("response-text").textContent = text;
+      box.classList.add("visible");
+    }
+
+    function showGameOver(survived, message) {
+      const title  = document.getElementById("gameover-title");
+      const msg    = document.getElementById("gameover-message");
+      const steps  = document.getElementById("gameover-steps");
+
+      if (survived) {
+        title.textContent = "You Survived!";
+        title.className   = "game-over-title win";
+        setBadge("Survived", "badge-won");
+      } else {
+        title.textContent = "Game Over";
+        title.className   = "game-over-title lose";
+        setBadge("Dead", "badge-dead");
+      }
+
+      msg.textContent   = message;
+      steps.textContent = `You made it ${stepCount} step${stepCount !== 1 ? "s" : ""} into the desert.`;
+
+      showScreen("gameover-screen");
+    }
+
+    function showScreen(screenId) {
+      ["start-screen", "question-screen", "gameover-screen"].forEach(id => {
+        document.getElementById(id).style.display = id === screenId ? "block" : "none";
+      });
+    }
+
+    function setBadge(text, className) {
+      const badge = document.getElementById("status-badge");
+      badge.textContent = text;
+      badge.className   = "badge " + className;
+    }
+
+    function disableOptions(disabled) {
+      document.querySelectorAll(".option-btn").forEach(btn => {
+        btn.disabled = disabled;
+      });
+    }
+
+
+    // ---------------------------------------------------------
+    // HISTORY LOG
+    // The Python version just prints to terminal — here we keep
+    // a visual log so the player can see their decision trail
+    // ---------------------------------------------------------
+    function addHistory(questionKey, optionKey, response, isDeath) {
+      const list = document.getElementById("history-list");
+
+      if (!historyStarted) {
+        list.innerHTML = "";
+        historyStarted = true;
+      }
+
+      const entry = document.createElement("div");
+      entry.className = "history-entry";
+
+      const responseClass = isDeath ? "history-death" : "history-response";
+
+      entry.innerHTML =
+        `<span class="history-q">${questionKey}</span> ` +
+        `<span class="history-choice">chose ${optionKey.toUpperCase()}</span> — ` +
+        `<span class="${responseClass}">${response}</span>`;
+
+      list.appendChild(entry);
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function clearHistory() {
+      document.getElementById("history-list").innerHTML =
+        '<p style="color:#2d3148; font-size:13px;">Choices will appear here as you play...</p>';
+    }
+  </script>
+
+</body>
+</html>
